@@ -1,0 +1,1 @@
+new File(projectDir, "generated-afterwards").text = "Success"
