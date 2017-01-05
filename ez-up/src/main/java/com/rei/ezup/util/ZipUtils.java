@@ -29,9 +29,9 @@ public class ZipUtils {
     /**
      * Creates a zip file from the directory
      * 
-     * @param dir directory to zip
-     * @param dest destination zip file
-     * @throws IOException
+     * @param basedir directory to zip
+     * @param destZip destination zip file
+     * @throws IOException if anything goes wrong creating the zip file
      */
     public static void create(Path basedir, Path destZip) throws IOException {
         try (FileSystem zipFs = createZipFileSystem(destZip, true)) {
