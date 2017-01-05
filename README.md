@@ -9,6 +9,26 @@ The main template must go in the `template/` sub-folder. Sub-templates must go i
 
 Each template or sub-template **MUST** contain `config.groovy` and may optionally contain `postinstall.groovy`. 
 
+# Get It
+
+Maven:
+
+    <dependency>
+        <groupId>com.rei.ez-up</groupId>
+        <artifactId>ez-up</artifactId>
+        <version>0.7</version>
+    </dependency>
+
+# Usage
+
+Currently the CLI for Ez-Up isn't distributed in a very consumable fashion. The main usage is embedded: 
+
+    EzUp ezup = new EzUp(new EzUpConfig(interactive, resolveDependencies, templateParams));
+    Artifact artifact = Aether.fromMavenSettings().resolveSingleArtifact(artifact.toString());
+    String readmeText = ezup.generate(artifact, projectDir);
+
+# Writing Templates
+
 ## config.groovy
 
 The `config.groovy` file contains the configuration for the template. In it you can configure parameters with the 
@@ -44,7 +64,7 @@ It's recommended to test your template by including the chairlift-testing depend
     <dependency>
         <groupId>com.rei.ez-up</groupId>
         <artifactId>ez-up-testing</artifactId>
-        <version>\${chairliftVersion}</version>
+        <version>0.7</version>
     </dependency>
 
 Since Ez-up templates are just regular jar projects the simplest way to test them is to just write a unit test!
