@@ -19,4 +19,20 @@
   		<version>${project.parent.version}</version>
   	</dependency>
   </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.rei.ez-up</groupId>
+                <artifactId>ez-up-maven-plugin</artifactId>
+                <version>${revision}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>attach-index</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
