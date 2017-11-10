@@ -24,7 +24,8 @@
 		<module>ez-up-template</module>
 		<module>ez-up-testing</module>
 		<module>ez-up-maven-plugin</module>
-	</modules>
+        <module>ez-up-cli</module>
+    </modules>
 
 	<dependencies>
 		<dependency>

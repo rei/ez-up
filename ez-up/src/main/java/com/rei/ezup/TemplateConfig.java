@@ -154,7 +154,7 @@ public class TemplateConfig {
     private static List<String> findSubtemplates(TemplateArchive archive, TemplateConfig config) throws IOException {
         return archive.list("/").stream()
                 .filter(s -> s.startsWith(SUBTEMPLATE_PREFIX))
-                .map(s -> s.replace(SUBTEMPLATE_PREFIX, ""))
+                .map(s -> s.replace(SUBTEMPLATE_PREFIX, "").replace("/", ""))
                 .collect(toList());
     }
 

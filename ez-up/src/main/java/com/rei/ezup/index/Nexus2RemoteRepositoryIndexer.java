@@ -6,7 +6,6 @@ import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
 
 import javax.xml.bind.JAXB;
@@ -17,8 +16,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Nexus2RemoteRepositoryIndexer implements RemoteRepositoryIndexer {
+
+    private static final Logger logger = LoggerFactory.getLogger(Nexus2RemoteRepositoryIndexer.class);
 
     public static final String STATUS_PATH = "/service/local/status";
     public static final String SEARCH_PATH = "/service/local/data_index?c=" + CLASSIFIER;
@@ -29,7 +32,12 @@ public class Nexus2RemoteRepositoryIndexer implements RemoteRepositoryIndexer {
     @Override
     public List<String> getIndexes(RemoteRepository repo) throws IOException {
         if (isNexus2(repo)) {
+            logger.info("indexing nexus repository {}", repo.getHost());
             HttpResponse response = httpClient.execute(new HttpGet(uri(repo, SEARCH_PATH)));
+            if (response.getStatusLine().getStatusCode() > 299) {
+                logger.debug("nexus returned unexpected status: {}", response.getStatusLine());
+                return emptyList();
+            }
             Nexus2SearchResults searchResults = JAXB.unmarshal(response.getEntity().getContent(), Nexus2SearchResults.class);
             return searchResults.data.stream()
                                      .filter(r -> r.groupId != null && r.artifactId != null)
@@ -50,11 +58,7 @@ public class Nexus2RemoteRepositoryIndexer implements RemoteRepositoryIndexer {
     }
 
     private URI uri(RemoteRepository repo, String path) throws IOException {
-        try {
-            return new URI(repo.getProtocol(), repo.getHost(), STATUS_PATH, "");
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
-        }
+        return URI.create(repo.getProtocol()+ "://" + repo.getHost() + path);
     }
 
     public static class Nexus2SearchResults {

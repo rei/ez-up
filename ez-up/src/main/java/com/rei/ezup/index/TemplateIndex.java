@@ -20,25 +20,17 @@ import java.util.stream.Stream;
 import groovy.json.JsonSlurper;
 
 import org.eclipse.aether.repository.RemoteRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.rei.aether.Aether;
 import com.rei.ezup.EzUp;
 import com.rei.ezup.TemplateInfo;
 import com.rei.ezup.util.ZipUtils;
 
-/*
-how template indexing will work:
-- template index is a jar maven classifier of 'ezup-idx'
-- contains META-INF/ezup-idx which contains list of <group>:<artifact> one per line
-
-searching:
-- local repo: simply walk FS looking for classified jars in local repo
-- Nexus: hit search endpoint /service/local/data_index?c=ezup-idx
-- Search Maven Central: http://search.maven.org/solrsearch/select?q=l:ezup-idx&core=gav&rows=20&wt=json
-- get full list of <group>:<artifact>, use Aether to download each (RELEASE version)
-- Parse Template info from each template
- */
 public class TemplateIndex {
+    private static final Logger logger = LoggerFactory.getLogger(TemplateIndex.class);
+
     public static final String CLASSIFIER = "ezup-idx";
     public static final String INDEX_PATH = "/META-INF/ezup.index";
     private static final String RELEASE_VERSION = ":RELEASE";
@@ -68,6 +60,7 @@ public class TemplateIndex {
     }
 
     public void reindex() {
+        logger.info("performing reindex of known templates...");
         Stream.<Runnable>of(
                 () -> reindexDirectory(aether.getLocalRepository().getBasedir().toPath()),
                 () -> aether.getConfiguredRepositories().parallelStream().forEach(this::index),
@@ -78,6 +71,7 @@ public class TemplateIndex {
     @SuppressWarnings("unchecked")
     private List<String> indexMavenCentral() {
         try {
+            logger.info("indexing maven central...");
             Map<String, Map<String, Object>> result = (Map<String, Map<String, Object>>) new JsonSlurper().parse(new URL(CENTRAL_SEARCH_URL));
             List<Map<String, Object>> resultRecords = (List<Map<String, Object>>) result.get("response").get("docs");
             return resultRecords.stream()
@@ -102,6 +96,7 @@ public class TemplateIndex {
 
     private void reindexDirectory(Path path) {
         try {
+            logger.info("re-indexing directory: {}", path);
             Files.walk(path)
                  .parallel()
                  .filter(p -> p.toString().endsWith("-" + CLASSIFIER + ".jar"))
@@ -112,6 +107,7 @@ public class TemplateIndex {
     }
 
     private void indexJar(Path jar) {
+        logger.debug("indexing jar file: {}", jar);
         try (FileSystem jarFs = ZipUtils.createZipFileSystem(jar, false)) {
             Path path = jarFs.getPath(INDEX_PATH);
             Files.readAllLines(path).forEach(this::index);

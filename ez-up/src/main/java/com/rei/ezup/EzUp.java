@@ -1,5 +1,6 @@
 package com.rei.ezup;
 
+import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
@@ -58,12 +59,12 @@ public class EzUp {
         this.globalConfig = globalConfig;
     }
     
-    public String generate(String gavSpec, Path projectDir) throws IOException, ArtifactResolutionException {
-        return generate(gavSpec, null, projectDir);
+    public String generate(String templateGav, Path projectDir) throws IOException, ArtifactResolutionException {
+        return generate(templateGav, null, projectDir);
     }
     
-    public String generate(String gavSpec, String subtemplate, Path projectDir) throws IOException, ArtifactResolutionException {
-        return generate(getAether().resolveSingleArtifact(gavSpec), subtemplate, projectDir);
+    public String generate(String templateGav, String subtemplate, Path projectDir) throws IOException, ArtifactResolutionException {
+        return generate(getAether().resolveSingleArtifact(templateGav), subtemplate, projectDir);
     }
     
     public String generate(Artifact templateArtifact, Path projectDir) throws IOException {
@@ -85,14 +86,14 @@ public class EzUp {
             runPostInstallScript(projectDir, config.getBasePath(), archive, config);
             
             if (subtemplate != null) {
-                return "Successfully generated subtemplate " + subtemplate + "!";
+                return null;
             }
             
             Path readme = projectDir.resolve("README.md");
             if (Files.exists(readme)) {
                 return new String(Files.readAllBytes(readme));
             }
-            return "No readme assoicated with project!";
+            return null;
         }
     }
 
@@ -103,7 +104,8 @@ public class EzUp {
     public TemplateInfo getTemplateInfo(Artifact artifact) {
         return FileUtils.withTempDir(tmpDir -> {
             try (TemplateArchive archive = new TemplateArchive(artifact, resolveClasspath(artifact))) {
-                TemplateConfig config = TemplateConfig.load(archive, null, globalConfig, tmpDir);
+                EzUpConfig infoConfig = new EzUpConfig(false, false, emptyMap());
+                TemplateConfig config = TemplateConfig.load(archive, null, infoConfig, tmpDir);
                 return config.getTemplateInfo();
             } catch (IOException e) {
                 logger.warn("error loading template config!", e);
