@@ -29,7 +29,7 @@
                 <executions>
                     <execution>
                         <goals>
-                            <goal>attach-index</goal>
+                            <goal>attach-marker</goal>
                         </goals>
                     </execution>
                 </executions>

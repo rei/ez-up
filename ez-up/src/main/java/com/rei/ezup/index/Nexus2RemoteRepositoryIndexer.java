@@ -1,11 +1,11 @@
 package com.rei.ezup.index;
 
-import static com.rei.ezup.index.TemplateIndex.CLASSIFIER;
+import static com.rei.ezup.index.TemplateIndex.EXTENSION;
 import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.JAXB;
@@ -23,8 +23,22 @@ public class Nexus2RemoteRepositoryIndexer implements RemoteRepositoryIndexer {
 
     private static final Logger logger = LoggerFactory.getLogger(Nexus2RemoteRepositoryIndexer.class);
 
+    /*
+    nexus2 only allows searching based on packaging if group id, artifact id, or version are specified, so we search these common
+    starts to group ids
+     */
+    private static final String[] GROUP_ID_PREFIXES = new String[] {
+            "c" /* co, ch, com */,
+            "d" /* de */,
+            "e" /* edu */,
+            "i" /* io */ ,
+            "o" /* org */,
+            "n"  /* net, nl, nz */,
+            "u" /* uk */
+    };
+
     public static final String STATUS_PATH = "/service/local/status";
-    public static final String SEARCH_PATH = "/service/local/data_index?c=" + CLASSIFIER;
+    public static final String SEARCH_PATH = "/service/local/data_index?p=" + EXTENSION + "g=";
     public static final String NEXUS_APP_NAME = "Nexus Repository Manager";
     public static final String VERSION_2 = "<version>2.";
     private HttpClient httpClient = HttpClientBuilder.create().setMaxConnTotal(20).setMaxConnPerRoute(10).build();
@@ -33,16 +47,25 @@ public class Nexus2RemoteRepositoryIndexer implements RemoteRepositoryIndexer {
     public List<String> getIndexes(RemoteRepository repo) throws IOException {
         if (isNexus2(repo)) {
             logger.info("indexing nexus repository {}", repo.getHost());
-            HttpResponse response = httpClient.execute(new HttpGet(uri(repo, SEARCH_PATH)));
-            if (response.getStatusLine().getStatusCode() > 299) {
-                logger.debug("nexus returned unexpected status: {}", response.getStatusLine());
-                return emptyList();
+            List<String> results = new ArrayList<>();
+
+            for (String groupIdPrefix : GROUP_ID_PREFIXES) {
+
+                HttpResponse response = httpClient.execute(new HttpGet(uri(repo, SEARCH_PATH + groupIdPrefix)));
+
+                if (response.getStatusLine().getStatusCode() > 299) {
+                    logger.debug("nexus returned unexpected status: {}", response.getStatusLine());
+                    continue;
+                }
+
+                Nexus2SearchResults searchResults = JAXB.unmarshal(response.getEntity().getContent(), Nexus2SearchResults.class);
+                searchResults.data.stream()
+                                  .filter(r -> r.groupId != null && r.artifactId != null)
+                                  .map(r -> r.groupId + ":" + r.artifactId)
+                                  .forEach(results::add);
             }
-            Nexus2SearchResults searchResults = JAXB.unmarshal(response.getEntity().getContent(), Nexus2SearchResults.class);
-            return searchResults.data.stream()
-                                     .filter(r -> r.groupId != null && r.artifactId != null)
-                                     .map(r -> r.groupId + ":" + r.artifactId)
-                                     .collect(toList());
+
+            return results;
         }
 
         return emptyList();

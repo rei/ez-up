@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,17 +25,15 @@ import org.slf4j.LoggerFactory;
 import com.rei.aether.Aether;
 import com.rei.ezup.EzUp;
 import com.rei.ezup.TemplateInfo;
-import com.rei.ezup.util.ZipUtils;
 
 public class TemplateIndex {
     private static final Logger logger = LoggerFactory.getLogger(TemplateIndex.class);
 
-    public static final String CLASSIFIER = "ezup-idx";
-    public static final String INDEX_PATH = "/META-INF/ezup.index";
+    public static final String EXTENSION = "ezup";
     private static final String RELEASE_VERSION = ":RELEASE";
 
     private static final String CENTRAL_SEARCH_URL =
-            "https://search.maven.org/solrsearch/select?q=l:" + CLASSIFIER + "&core=gav&rows=100&wt=json";
+            "https://search.maven.org/solrsearch/select?q=p:" + EXTENSION + "&core=gav&rows=100&wt=json";
 
     private static final List<RemoteRepositoryIndexer> REMOTE_REPOSITORY_INDEXERS = Arrays.asList(
             new Nexus2RemoteRepositoryIndexer()
@@ -99,18 +96,17 @@ public class TemplateIndex {
             logger.info("re-indexing directory: {}", path);
             Files.walk(path)
                  .parallel()
-                 .filter(p -> p.toString().endsWith("-" + CLASSIFIER + ".jar"))
-                 .forEach(this::indexJar);
+                 .filter(p -> p.toString().endsWith("." + EXTENSION))
+                 .forEach(this::indexFile);
         } catch (IOException e) {
             e.printStackTrace(); // TODO
         }
     }
 
-    private void indexJar(Path jar) {
-        logger.debug("indexing jar file: {}", jar);
-        try (FileSystem jarFs = ZipUtils.createZipFileSystem(jar, false)) {
-            Path path = jarFs.getPath(INDEX_PATH);
-            Files.readAllLines(path).forEach(this::index);
+    private void indexFile(Path f) {
+        logger.debug("indexing file: {}", f);
+        try {
+            Files.readAllLines(f).forEach(this::index);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
