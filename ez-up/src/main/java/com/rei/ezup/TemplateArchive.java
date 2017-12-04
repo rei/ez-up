@@ -151,6 +151,7 @@ public class TemplateArchive implements AutoCloseable {
                 if (allMatch(copyFilters, root.relativize(dir))) {
                     Path rawDest = Paths.get(projectDir.toString(), root.relativize(dir).toString());
                     Path dest = filenameTransformer.apply(rawDest);
+                    progressReporter.reportProgress(logger, "creating directory {} in {}", projectDir.relativize(dest), projectDir);
                     Files.createDirectories(dest);
                 }
                 return FileVisitResult.CONTINUE;

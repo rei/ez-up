@@ -4,11 +4,7 @@ import java.util.List;
 
 import org.eclipse.aether.artifact.Artifact;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-
 public class TemplateInfo {
-    @JsonSerialize(using = ToStringSerializer.class)
     private Artifact artifact;
     private String name;
     private String description;
