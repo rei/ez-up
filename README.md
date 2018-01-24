@@ -16,12 +16,24 @@ Maven:
     <dependency>
         <groupId>com.rei.ez-up</groupId>
         <artifactId>ez-up</artifactId>
-        <version>0.7</version>
+        <version>1.0</version>
     </dependency>
+
+
+Download: http://central.maven.org/maven2/com/rei/ez-up/ez-up-cli/1.0/ez-up-cli-1.0-dist.zip
+
+# Installation
+
+Download http://central.maven.org/maven2/com/rei/ez-up/ez-up-cli/1.0/ez-up-cli-1.0-dist.zip
+Unzip and add the installation directory to your PATH.
 
 # Usage
 
-Currently the CLI for Ez-Up isn't distributed in a very consumable fashion. The main usage is embedded: 
+`ez-up list` - list out all known templates
+`ez-up generate <template gav> [<subtemplate>]` - generate a project from a template or run subtemplate of a template
+
+# Embedded Usage
+One of the primary usages is embedded embedded in other applications:
 
     EzUp ezup = new EzUp(new EzUpConfig(interactive, resolveDependencies, templateParams));
     Artifact artifact = Aether.fromMavenSettings().resolveSingleArtifact(artifact.toString());
