@@ -24,13 +24,13 @@ Download: http://central.maven.org/maven2/com/rei/ez-up/ez-up-cli/1.0/ez-up-cli-
 
 # Installation
 
-Download http://central.maven.org/maven2/com/rei/ez-up/ez-up-cli/1.0/ez-up-cli-1.0-dist.zip
-Unzip and add the installation directory to your PATH.
+  * Download http://central.maven.org/maven2/com/rei/ez-up/ez-up-cli/1.0/ez-up-cli-1.0-dist.zip
+  * Unzip and add the installation directory to your PATH.
 
 # Usage
 
-`ez-up list` - list out all known templates
-`ez-up generate <template gav> [<subtemplate>]` - generate a project from a template or run subtemplate of a template
+  * `ez-up list` - list out all known templates
+  * `ez-up generate <template gav> [<subtemplate>]` - generate a project from a template or run subtemplate of a template
 
 # Embedded Usage
 One of the primary usages is embedded embedded in other applications:
