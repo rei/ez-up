@@ -13,7 +13,7 @@ import org.junit.rules.TemporaryFolder;
 import com.rei.aether.Aether;
 import com.rei.ezup.index.TemplateIndex;
 
-public class TemplateIndexTest {
+public class TemplateIndexIT {
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder();
 

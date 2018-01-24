@@ -4,8 +4,10 @@ import static com.rei.ezup.index.TemplateIndex.EXTENSION;
 import static java.util.Collections.emptyList;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.xml.bind.JAXB;
@@ -49,26 +51,33 @@ public class Nexus2RemoteRepositoryIndexer implements RemoteRepositoryIndexer {
             logger.info("indexing nexus repository {}", repo.getHost());
             List<String> results = new ArrayList<>();
 
-            for (String groupIdPrefix : GROUP_ID_PREFIXES) {
-
-                HttpResponse response = httpClient.execute(new HttpGet(uri(repo, SEARCH_PATH + groupIdPrefix)));
-
-                if (response.getStatusLine().getStatusCode() > 299) {
-                    logger.debug("nexus returned unexpected status: {}", response.getStatusLine());
-                    continue;
+            Arrays.stream(GROUP_ID_PREFIXES).parallel().forEach(p -> {
+                try {
+                    searchGroupIdPrefix(repo, p, results);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
-
-                Nexus2SearchResults searchResults = JAXB.unmarshal(response.getEntity().getContent(), Nexus2SearchResults.class);
-                searchResults.data.stream()
-                                  .filter(r -> r.groupId != null && r.artifactId != null)
-                                  .map(r -> r.groupId + ":" + r.artifactId)
-                                  .forEach(results::add);
-            }
+            });
 
             return results;
         }
 
         return emptyList();
+    }
+
+    private void searchGroupIdPrefix(RemoteRepository repo, String prefix, List<String> results) throws IOException {
+        HttpResponse response = httpClient.execute(new HttpGet(uri(repo, SEARCH_PATH + prefix)));
+
+        if (response.getStatusLine().getStatusCode() > 299) {
+            logger.debug("nexus returned unexpected status: {}", response.getStatusLine());
+            return;
+        }
+
+        Nexus2SearchResults searchResults = JAXB.unmarshal(response.getEntity().getContent(), Nexus2SearchResults.class);
+        searchResults.data.stream()
+                          .filter(r -> r.groupId != null && r.artifactId != null)
+                          .map(r -> r.groupId + ":" + r.artifactId)
+                          .forEach(results::add);
     }
 
     private boolean isNexus2(RemoteRepository repo) throws IOException {
