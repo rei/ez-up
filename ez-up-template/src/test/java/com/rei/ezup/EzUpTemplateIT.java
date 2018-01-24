@@ -5,7 +5,7 @@ import org.junit.Test;
 
 import com.rei.ezup.testing.TemplateTester;
 
-public class EzUpTemplateTest {
+public class EzUpTemplateIT {
 
     @Rule
     public TemplateTester tester = TemplateTester.forCurrentProject().deleteOnFailure(false).offline(false);
