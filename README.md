@@ -1,6 +1,6 @@
 # EZ Up 
 
-EZ-Up is a simple project templating tool. It was born out of frustration with the [Maven Archetype Plugin](http://maven.apache.org/archetype/maven-archetype-plugin/). 
+EZ-Up is a simple project templating tool. It was born out of frustration with the [Maven Archetype Plugin](http://maven.apache.org/archetype/maven-archetype-plugin/).
 It borrows several ideas from [Lazybones](https://github.com/pledbrook/lazybones) but is a much better fit for the Maven ecosystem. 
 
 EZ up template projects are standard jar projects with some special folders in `src/main/resources/`.
@@ -76,7 +76,7 @@ It's recommended to test your template by including the chairlift-testing depend
     <dependency>
         <groupId>com.rei.ez-up</groupId>
         <artifactId>ez-up-testing</artifactId>
-        <version>0.7</version>
+        <version>1.0</version>
     </dependency>
 
 Since Ez-up templates are just regular jar projects the simplest way to test them is to just write a unit test!
