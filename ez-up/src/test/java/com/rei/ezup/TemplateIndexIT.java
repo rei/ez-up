@@ -1,24 +1,20 @@
 package com.rei.ezup;
 
-import static java.util.stream.Collectors.joining;
-import static org.junit.Assert.assertTrue;
+import com.rei.aether.Aether;
+import com.rei.ezup.index.TemplateIndex;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import com.rei.aether.Aether;
-import com.rei.ezup.index.TemplateIndex;
+import static java.util.stream.Collectors.joining;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TemplateIndexIT {
-    @Rule
-    public TemporaryFolder tmp = new TemporaryFolder();
-
     @Test
-    public void canIndexLocalDirectory() throws Exception {
+    void canIndexLocalDirectory(@TempDir Path tmp) throws Exception {
         EzUp ezUp = new EzUp(new EzUpConfig(false, false, new HashMap<>()));
         Aether aether = Aether.fromMavenSettings();
 
@@ -32,7 +28,7 @@ public class TemplateIndexIT {
 
         assertTrue(idx.getIndexedTemplates().stream().anyMatch(ti -> ti.getName().equals("EZ-Up Template")));
 
-        Path stored = tmp.newFile().toPath();
+        Path stored = Files.createTempFile(tmp, "idx", "");
         idx.store(stored);
 
         idx = new TemplateIndex(ezUp, aether);

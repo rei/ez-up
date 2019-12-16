@@ -1,31 +1,25 @@
 package com.rei.ezup;
 
+import com.rei.ezup.util.ZipUtils;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-
-import com.rei.ezup.util.ZipUtils;
-
 public class BaseTemplateTest {
-    @Rule
-    public TemporaryFolder tmp = new TemporaryFolder();
-
-    public TemplateArchive getTestTemplate() throws Exception {
-        Artifact artifact = getTestTemplateArtifact();
+    public TemplateArchive getTestTemplate(Path tmp) throws Exception {
+        Artifact artifact = getTestTemplateArtifact(tmp);
         TemplateArchive archive = new TemplateArchive(artifact);
         archive.init();
         return archive;
     }
 
-    public Artifact getTestTemplateArtifact() throws Exception {
+    public Artifact getTestTemplateArtifact(Path tmp) throws Exception {
         String name = "chairlift-test";
         Artifact artifact = new DefaultArtifact("com.rei.test", name, "zip", "1");
-        Path templateZip = tmp.getRoot().toPath().resolve(name + ".zip");
+        Path templateZip = tmp.resolve(name + ".zip");
         createTemplateZip(name, templateZip);
         artifact = artifact.setFile(templateZip.toFile());
         return artifact;

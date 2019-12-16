@@ -1,25 +1,16 @@
 package com.rei.ezup;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import com.google.common.collect.ImmutableMap;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.function.Predicate;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableMap;
-import com.rei.ezup.EzUp;
-import com.rei.ezup.EzUpConfig;
-import com.rei.ezup.TemplateConfig;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class EzUpTest extends BaseTemplateTest {
     EzUpConfig globalConfig = new EzUpConfig(false, false, ImmutableMap.of());
@@ -44,10 +35,10 @@ public class EzUpTest extends BaseTemplateTest {
     }
     
     @Test
-    public void canGenerateProject() throws Exception {
-        Path projectFolder = tmp.newFolder("project").toPath();
+    public void canGenerateProject(@TempDir Path tmp) throws Exception {
+        Path projectFolder = tmp.resolve("project");
         
-        String readme = chairlift.generate(getTestTemplateArtifact(), projectFolder);
+        String readme = chairlift.generate(getTestTemplateArtifact(tmp), projectFolder);
         
         printDir(projectFolder);
         
@@ -61,10 +52,10 @@ public class EzUpTest extends BaseTemplateTest {
     }
     
     @Test
-    public void canGenerateSubTemplate() throws Exception {
-        Path projectFolder = tmp.newFolder("project").toPath();
+    public void canGenerateSubTemplate(@TempDir Path tmp) throws Exception {
+        Path projectFolder = tmp.resolve("project");
         
-        chairlift.generate(getTestTemplateArtifact(), "entity", projectFolder);
+        chairlift.generate(getTestTemplateArtifact(tmp), "entity", projectFolder);
         
         printDir(projectFolder);
         
