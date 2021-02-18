@@ -20,11 +20,11 @@ Maven:
     </dependency>
 
 
-Download: http://central.maven.org/maven2/com/rei/ez-up/ez-up-cli/1.0/ez-up-cli-1.0-dist.zip
+Download: https://repo1.maven.org/maven2/com/rei/ez-up/ez-up-cli/1.0/ez-up-cli-1.0-dist.zip 
 
 # Installation
 
-  * Download http://central.maven.org/maven2/com/rei/ez-up/ez-up-cli/1.0/ez-up-cli-1.0-dist.zip
+  * Download: https://repo1.maven.org/maven2/com/rei/ez-up/ez-up-cli/1.0/ez-up-cli-1.0-dist.zip
   * Unzip and add the installation directory to your PATH.
 
 # Usage
