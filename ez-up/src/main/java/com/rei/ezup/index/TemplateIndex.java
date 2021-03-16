@@ -35,9 +35,8 @@ public class TemplateIndex {
     private static final String CENTRAL_SEARCH_URL =
             "https://search.maven.org/solrsearch/select?q=p:" + EXTENSION + "&core=gav&rows=100&wt=json";
 
-    private static final List<RemoteRepositoryIndexer> REMOTE_REPOSITORY_INDEXERS = Arrays.asList(
-            new Nexus2RemoteRepositoryIndexer()
-    );
+    //TODO: implement nexus3 indexer
+    private static final List<RemoteRepositoryIndexer> REMOTE_REPOSITORY_INDEXERS = Collections.emptyList();
 
     private EzUp ezup;
     private Aether aether;

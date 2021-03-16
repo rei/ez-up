@@ -4,3 +4,4 @@
 target
 release.pom
 *.iml
+.idea
