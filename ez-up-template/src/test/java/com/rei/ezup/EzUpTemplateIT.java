@@ -1,13 +1,13 @@
 package com.rei.ezup;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.rei.ezup.testing.TemplateTester;
 
 public class EzUpTemplateIT {
 
-    @Rule
+    @RegisterExtension
     public TemplateTester tester = TemplateTester.forCurrentProject().deleteOnFailure(false).offline(false);
     
     @Test

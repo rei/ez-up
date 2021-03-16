@@ -1,32 +1,35 @@
 package com.rei.ezup;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import com.google.common.collect.ImmutableMap;
+import org.codehaus.plexus.util.FileUtils;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Path;
 import java.util.Map;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableMap;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TemplateConfigTest extends BaseTemplateTest {
     @Test
-    public void testLoad() throws Exception {
-        TemplateArchive archive = getTestTemplate();
-        EzUpConfig globalConfig = new EzUpConfig(false, false, ImmutableMap.of("global", "true", "includeFoo", "true"));
-        
-        TemplateConfig config = TemplateConfig.load(archive, null, globalConfig, tmp.getRoot().toPath());
-        Map<String, Object> params = config.getParameterValues();
-        System.out.println(params);
-        assertEquals(11, params.size());
-        assertEquals(1, config.getIncludedFiles().size());
-        assertEquals(1, config.getExcludedFiles().size());
-        assertNotNull(params.get("AppName"));
+    public void testLoad(@TempDir Path tmp) throws Exception {
+        try(TemplateArchive archive = getTestTemplate(tmp)) {
+            EzUpConfig globalConfig = new EzUpConfig(false, false, ImmutableMap.of("global", "true", "includeFoo", "true"));
 
-        TemplateInfo templateInfo = config.getTemplateInfo();
-        System.out.println(templateInfo.getName() + " - " + templateInfo.getDescription());
-        assertEquals("Chairlift Test Template", templateInfo.getName());
-        assertEquals("This is a test", templateInfo.getDescription());
+            TemplateConfig config = TemplateConfig.load(archive, null, globalConfig, tmp);
+            Map<String, Object> params = config.getParameterValues();
+            System.out.println(params);
+            assertEquals(11, params.size());
+            assertEquals(1, config.getIncludedFiles().size());
+            assertEquals(1, config.getExcludedFiles().size());
+            assertNotNull(params.get("AppName"));
+
+            TemplateInfo templateInfo = config.getTemplateInfo();
+            System.out.println(templateInfo.getName() + " - " + templateInfo.getDescription());
+            assertEquals("Chairlift Test Template", templateInfo.getName());
+            assertEquals("This is a test", templateInfo.getDescription());
+        }
     }
 
 }

@@ -24,14 +24,16 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.junit.Assert;
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import com.rei.ezup.EzUp;
 import com.rei.ezup.EzUpConfig;
 import com.rei.ezup.util.ZipUtils;
 
-public class TemplateTester extends ExternalResource {
+public class TemplateTester implements BeforeEachCallback, AfterEachCallback {
     private static final String RELATIVE_POM_LOCATION = "../../pom.xml";
     private Path srcFolder;
     private Path tmp;
@@ -47,37 +49,36 @@ public class TemplateTester extends ExternalResource {
     public static TemplateTester forCurrentProject() {
         try {
             URL url = TemplateTester.class.getClassLoader().getResource(DEFAULT_TEMPLATE + "/" + CONFIG_GROOVY);
-            Assert.assertNotNull("no config.groovy exists on the classpath!", url);
+            Assertions.assertNotNull(url, "no config.groovy exists on the classpath!");
             Path folder = Paths.get(url.toURI().resolve(".."));
             return new TemplateTester(folder);
         } catch (URISyntaxException | IOException e) {
             throw new AssertionError("unable to create template! ", e);
         }
     }
-    
+
     @Override
-    protected void before() throws Throwable {
+    public void beforeEach(ExtensionContext context) throws Exception {
         tmp = Files.createTempDirectory(srcFolder.resolve("..").normalize(), "ezup-templ-test");
         destFolder = tmp.resolve("project");
-        
     }
-    
+
     @Override
-    protected void after() {
+    public void afterEach(ExtensionContext context) throws Exception {
         if (!deleteOnFail && failed) { return; }
-        
+
         try {
             FileUtils.deleteDirectory(tmp.toFile());
         } catch (IOException e) {
             System.out.println("unable to delete temp dir: " + e.getMessage());
         }
     }
-    
+
     public TemplateTester offline(boolean offline) {
         this.offline = offline;
         return this;
     }
-    
+
     public TemplateTester deleteOnFailure(boolean deleteOnFail) {
         this.deleteOnFail = deleteOnFail;
         return this;
@@ -87,17 +88,17 @@ public class TemplateTester extends ExternalResource {
         System.setProperty("org.slf4j.simpleLogger.log.com.rei.ezup", "debug");
         return this;
     }
-    
+
     public TestScenario forTemplate() {
         return new TestScenario();
     }
-    
+
     public TestScenario forSubTemplate(String name) {
         TestScenario scenario = new TestScenario();
         scenario.subtemplate = name;
         return scenario;
     }
-    
+
     public class TestScenario {
         private Map<String, String> params = new LinkedHashMap<>();
         private List<String> goals = new ArrayList<>();
@@ -188,17 +189,17 @@ public class TemplateTester extends ExternalResource {
             chairlift.generate(artifact, subtemplate, destFolder);
             
             validations.forEach((path, validation) -> {
-                Assert.assertTrue("expected " + path + " to exist", Files.exists(destFolder.resolve(path)));
+                Assertions.assertTrue(Files.exists(destFolder.resolve(path)), "expected " + path + " to exist");
                 try {
                     String content = new String(Files.readAllBytes(destFolder.resolve(path)));
-                    Assert.assertTrue(path + " didn't pass validation! " + validation.message, validation.validator.test(content));
+                    Assertions.assertTrue(validation.validator.test(content), path + " didn't pass validation! " + validation.message);
                 } catch (Exception e) {
                     throw new AssertionError(e);
                 }
             });
             
             doesntGenerate.forEach(path -> 
-                Assert.assertFalse("expected " + path + " NOT to exist!", Files.exists(destFolder.resolve(path))));
+                Assertions.assertFalse(Files.exists(destFolder.resolve(path)), "expected " + path + " NOT to exist!"));
             
             if (!goals.isEmpty()) {
                 System.setProperty(MavenCli.MULTIMODULE_PROJECT_DIRECTORY, destFolder.toAbsolutePath().toString());
@@ -207,7 +208,7 @@ public class TemplateTester extends ExternalResource {
                     goals.add(0, "-o");
                 }
                 int returnCode = cli.doMain(goals.toArray(new String[0]), destFolder.toAbsolutePath().toString(), System.out, System.out);
-                Assert.assertEquals("maven command failed!", 0, returnCode);
+                Assertions.assertEquals(0, returnCode, "maven command failed!");
             }            
         }
 
