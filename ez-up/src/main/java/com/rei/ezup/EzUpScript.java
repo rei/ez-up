@@ -2,6 +2,7 @@ package com.rei.ezup;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Strings;
@@ -28,19 +29,19 @@ public class EzUpScript extends Script {
     }
 
     public void includeFiles(String... patterns) {
-        config.getIncludedFiles().addAll(Arrays.asList(patterns));
+        config.getIncludedFiles().addAll(List.of(patterns));
     }
     
     public void excludeFiles(String... patterns) {
-        config.getExcludedFiles().addAll(Arrays.asList(patterns));
+        config.getExcludedFiles().addAll(List.of(patterns));
     }
     
     public void processFiles(String... patterns) {
-        config.getProcessedFiles().addAll(Arrays.asList(patterns));
+        config.getProcessedFiles().addAll(List.of(patterns));
     }
     
     public void passthroughFiles(String... patterns) {
-        config.getUnprocessedFiles().addAll(Arrays.asList(patterns));
+        config.getUnprocessedFiles().addAll(List.of(patterns));
     }
     
     private Object getParamValue(String name, String description, Object defaultValue) {

@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import com.rei.ezup.EzUp;
 import com.rei.ezup.EzUpConfig;
+import com.rei.ezup.util.PomUtils;
 import com.rei.ezup.util.ZipUtils;
 
 public class TemplateTester implements BeforeEachCallback, AfterEachCallback {
@@ -117,7 +118,7 @@ public class TemplateTester implements BeforeEachCallback, AfterEachCallback {
         }    
         
         public TestScenario runsMavenGoals(String... goals) {
-            this.goals.addAll(Arrays.asList(goals));
+            this.goals.addAll(List.of(goals));
             return this;
         }    
         
@@ -177,9 +178,7 @@ public class TemplateTester implements BeforeEachCallback, AfterEachCallback {
         }
         
         private void doGenerateAndValidate() throws Exception {
-            MavenXpp3Reader reader = new MavenXpp3Reader();
-            Model model = reader.read(Files.newBufferedReader(srcFolder.resolve(RELATIVE_POM_LOCATION)));
-            Artifact artifact = new DefaultArtifact(getGroupId(model), model.getArtifactId(), model.getPackaging(), getVersion(model));
+            Artifact artifact = PomUtils.readPomToArtifact(srcFolder.resolve(RELATIVE_POM_LOCATION));
             
             Path templateJar = tmp.resolve("template.jar");
             ZipUtils.create(srcFolder, templateJar);
@@ -210,21 +209,6 @@ public class TemplateTester implements BeforeEachCallback, AfterEachCallback {
                 int returnCode = cli.doMain(goals.toArray(new String[0]), destFolder.toAbsolutePath().toString(), System.out, System.out);
                 Assertions.assertEquals(0, returnCode, "maven command failed!");
             }            
-        }
-
-        private String getGroupId(Model model) {
-            return model.getGroupId() != null ? model.getGroupId() : model.getParent().getGroupId();
-        }
-
-        private String getVersion(Model model) {
-            String version = model.getVersion() != null ? model.getVersion() : model.getParent().getVersion();
-            for (Object name : System.getProperties().keySet()) {
-                version = version.replace("${" + name + "}", System.getProperties().getProperty(name.toString()));
-            }
-            for (Object name : model.getProperties().keySet()) {
-                version = version.replace("${" + name + "}", model.getProperties().getProperty(name.toString()));
-            }
-            return version;
         }
     }
     

@@ -18,6 +18,7 @@ public class EzUpCli {
                                                 .put("generate", new GenerateCommand())
                                                 .put("list", new ListTemplatesCommand())
                                                 .put("version", new VersionCommand())
+                                                .put("watch", new WatchCommand())
                                                 .build();
 
 

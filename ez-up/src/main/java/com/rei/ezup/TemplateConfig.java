@@ -132,7 +132,7 @@ public class TemplateConfig {
         config.basePath = basePath;
 
         TemplateInfo info = new TemplateInfo();
-        info.setArtifact(archive.getArtifact());
+        info.setGav(archive.getGav());
 
         archive.read(String.format(POM_PATH_FORMAT, archive.getGroupId(), archive.getArtifactId())).ifPresent(pom -> {
             MavenXpp3Reader reader = new MavenXpp3Reader();

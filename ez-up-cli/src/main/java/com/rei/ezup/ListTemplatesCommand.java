@@ -32,7 +32,7 @@ public class ListTemplatesCommand implements Command {
 
         index.getIndexedTemplates().forEach(ti -> {
             logger.info("{} - {}", ti.getName(), ti.getDescription());
-            logger.info("  {}", ti.getArtifact());
+            logger.info("  {}", ti.getGav());
             if (!ti.getSubtemplates().isEmpty()) {
                 logger.info("  subtemplates: {}", String.join(", ", ti.getSubtemplates()));
             }

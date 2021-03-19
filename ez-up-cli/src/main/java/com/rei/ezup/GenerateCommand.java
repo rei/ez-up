@@ -65,6 +65,6 @@ public class GenerateCommand implements Command {
         if (selection > indexedTemplates.size() - 1) {
             throw new IllegalArgumentException("invalid selection");
         }
-        return indexedTemplates.get(selection).getArtifact().toString();
+        return indexedTemplates.get(selection).getGav();
     }
 }

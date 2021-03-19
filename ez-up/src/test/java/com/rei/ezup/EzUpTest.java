@@ -8,13 +8,14 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class EzUpTest extends BaseTemplateTest {
     EzUpConfig globalConfig = new EzUpConfig(false, false, ImmutableMap.of());
-    EzUp chairlift = new EzUp(globalConfig);
+    EzUp ezup = new EzUp(globalConfig);
     
     @Test
     public void testFilters() {
@@ -22,23 +23,23 @@ public class EzUpTest extends BaseTemplateTest {
         config.getIncludedFiles().add("**/*");
         config.getExcludedFiles().add("**/exclude");
         
-        assertTrue(allMatch(chairlift.getCopyFilters(config), Paths.get("/README.md")));
-        assertTrue(allMatch(chairlift.getCopyFilters(config), Paths.get("/foo/bar")));
-        assertFalse(allMatch(chairlift.getCopyFilters(config), Paths.get("/foo/exclude")));
+        assertTrue(allMatch(ezup.getCopyFilters(config), Paths.get("/README.md")));
+        assertTrue(allMatch(ezup.getCopyFilters(config), Paths.get("/foo/bar")));
+        assertFalse(allMatch(ezup.getCopyFilters(config), Paths.get("/foo/exclude")));
         
         config.getProcessedFiles().add("**/*");
         config.getUnprocessedFiles().add("some-folder/BLAH");
         
-        assertTrue(allMatch(chairlift.getProcessFilters(config), Paths.get("/README.md")));
-        assertTrue(allMatch(chairlift.getProcessFilters(config), Paths.get("/foo/bar")));
-        assertFalse(allMatch(chairlift.getProcessFilters(config), Paths.get("/some-folder/BLAH")));
+        assertTrue(allMatch(ezup.getProcessFilters(config), Paths.get("/README.md")));
+        assertTrue(allMatch(ezup.getProcessFilters(config), Paths.get("/foo/bar")));
+        assertFalse(allMatch(ezup.getProcessFilters(config), Paths.get("/some-folder/BLAH")));
     }
     
     @Test
     public void canGenerateProject(@TempDir Path tmp) throws Exception {
         Path projectFolder = tmp.resolve("project");
         
-        String readme = chairlift.generate(getTestTemplateArtifact(tmp), projectFolder);
+        String readme = ezup.generate(getTestTemplateArtifact(tmp), projectFolder);
         
         printDir(projectFolder);
         
@@ -55,14 +56,46 @@ public class EzUpTest extends BaseTemplateTest {
     public void canGenerateSubTemplate(@TempDir Path tmp) throws Exception {
         Path projectFolder = tmp.resolve("project");
         
-        chairlift.generate(getTestTemplateArtifact(tmp), "entity", projectFolder);
+        ezup.generate(getTestTemplateArtifact(tmp), "entity", projectFolder);
         
         printDir(projectFolder);
         
         assertTrue(Files.exists(projectFolder.resolve("com/rei/test/domain/Entity.java")));
         assertTrue(Files.exists(projectFolder.resolve("com/rei/test/persistence/EntityRepository.java")));
     }
-    
+
+    @Test
+    public void canGenerateAndWatchTemplate(@TempDir Path tmp) throws Exception {
+        Path projectFolder = tmp.resolve("project");
+
+        Path templateDir = getTemplateRootDir();
+        CompletableFuture<Void> watcher = ezup.generateAndWatch(templateDir, projectFolder);
+
+        printDir(projectFolder);
+        Thread.sleep(30);
+
+        Path addedFile = templateDir.resolve("template/__appName__-added-file.txt");
+        try {
+            Files.write(addedFile, "this is a new file".getBytes());
+
+            Thread.sleep(500);
+            System.out.println("------");
+            printDir(projectFolder);
+            assertTrue(Files.exists(projectFolder.resolve("my-app-added-file.txt")));
+
+
+            Files.delete(addedFile);
+            Thread.sleep(500);
+            System.out.println("------");
+            printDir(projectFolder);
+            assertFalse(Files.exists(projectFolder.resolve("my-app-added-file.txt")));
+
+            watcher.cancel(true);
+        } finally {
+            Files.deleteIfExists(addedFile);
+        }
+    }
+
     private void printDir(Path dir) throws IOException {
         Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
             @Override

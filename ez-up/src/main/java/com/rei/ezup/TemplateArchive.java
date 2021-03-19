@@ -27,31 +27,49 @@ import org.slf4j.LoggerFactory;
 public class TemplateArchive implements AutoCloseable {
     
     private static final Logger logger = LoggerFactory.getLogger(TemplateArchive.class);
-    
-    private Artifact artifact;
-    protected FileSystem fileSystem;
-    private final List<URL> classpath;
 
-    public TemplateArchive(Artifact artifact) {
+    private final String groupId;
+    private final String artifactId;
+    private final String version;
+    private final String classifier;
+    private final String extension;
+
+    private FileSystem fileSystem;
+    private Path basePath;
+    private final List<URL> classpath;
+    private final boolean closeable;
+
+    public TemplateArchive(Artifact artifact) throws IOException {
         this(artifact, Collections.emptyList());
     }
     
-    public TemplateArchive(Artifact artifact, List<URL> classpath) {
-        this.artifact = artifact;
+    public TemplateArchive(Artifact artifact, List<URL> classpath) throws IOException {
+        this.groupId = artifact.getGroupId();
+        this.artifactId = artifact.getArtifactId();
+        this.version = artifact.getVersion();
+        this.classifier = artifact.getClassifier();
+        this.extension = artifact.getExtension();
         this.classpath = classpath;
-    }    
-
-    public void init() throws IOException {
-        if (fileSystem != null) {
-            return; //already initialized
-        }
         final URI uri = URI.create("jar:file:" + artifact.getFile().toURI().getPath());
         fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+        basePath = Paths.get("/");
+        this.closeable = true;
+    }    
+
+    public TemplateArchive(Path templateDir, Artifact artifact, List<URL> classpath) {
+        this.groupId = artifact.getGroupId();
+        this.artifactId = artifact.getArtifactId();
+        this.version = artifact.getVersion();
+        this.classifier = artifact.getClassifier();
+        this.extension = artifact.getExtension();
+        this.classpath = classpath;
+        this.fileSystem = FileSystems.getDefault();
+        this.basePath = templateDir;
+        this.closeable = false;
     }
 
     public Optional<String> read(String path) throws IOException {
-        init();
-        Path p = fileSystem.getPath(path);
+        Path p = fileSystem.getPath(basePath.toString(), path);
         if (Files.exists(p)) {
             return Optional.of(new String(Files.readAllBytes(p)));
         }
@@ -60,13 +78,11 @@ public class TemplateArchive implements AutoCloseable {
     }
     
     public boolean exists(String path) throws IOException {
-        init();
-        return Files.exists(fileSystem.getPath(path));
+        return Files.exists(fileSystem.getPath(basePath.toString(), path));
     }
     
     public List<String> list(String folder) throws IOException {
-        init();
-        Path path = fileSystem.getPath(folder);
+        Path path = fileSystem.getPath(basePath.toString(), folder);
         if (!Files.exists(path)) {
             return Collections.emptyList();
         }
@@ -76,74 +92,81 @@ public class TemplateArchive implements AutoCloseable {
     }
 
     public String getVersion() {
-        return artifact.getVersion();
+        return version;
     }
 
     public String getGroupId() {
-        return artifact.getGroupId();
+        return groupId;
     }
 
     public String getArtifactId() {
-        return artifact.getArtifactId();
+        return artifactId;
     }
 
     public String getClassifier() {
-        return artifact.getClassifier();
+        return classifier;
     }
 
     public String getExtension() {
-        return artifact.getExtension();
+        return extension;
     }
 
-    public Artifact getArtifact() {
-        return artifact;
+    public String getGav() {
+        StringBuilder buffer = new StringBuilder(128);
+        buffer.append(getGroupId());
+        buffer.append(':').append(getArtifactId());
+        buffer.append(':').append(getExtension());
+        if (getClassifier().length() > 0) {
+            buffer.append(':').append(getClassifier());
+        }
+        buffer.append(':').append(getVersion());
+        return buffer.toString();
     }
 
     public List<URL> getClasspath() {
         return classpath;
     }
-    
-    public void unpackTo(String base, Path projectDir, 
-                         List<Predicate<Path>> copyFilters, 
-                         List<Predicate<Path>> processingFilters, 
-                         Function<Path, Path> filenameTransformer, 
-                         Function<String, String> contentTransformer, 
+
+    public void unpackFileTo(String base,
+                             String file,
+                             Path projectDir,
+                             List<Predicate<Path>> copyFilters,
+                             List<Predicate<Path>> processingFilters,
+                             Function<Path, Path> filenameTransformer,
+                             Function<String, String> contentTransformer,
+                             ProgressReporter progressReporter) throws IOException {
+
+        final Path root = fileSystem.getPath(basePath.toString(), base);
+        Path filePath = root.resolve(file);
+        if (Files.notExists(filePath) || !Files.isRegularFile(filePath)) {
+            throw new IllegalArgumentException("no file at " + file);
+        }
+        unpackFileTo(root, filePath, projectDir, copyFilters, processingFilters, filenameTransformer, contentTransformer,
+                     progressReporter);
+    }
+
+    public void unpackTo(String base, Path projectDir,
+                         List<Predicate<Path>> copyFilters,
+                         List<Predicate<Path>> processingFilters,
+                         Function<Path, Path> filenameTransformer,
+                         Function<String, String> contentTransformer,
                          ProgressReporter progressReporter) throws IOException {
-        
+
         // if the destination doesn't exist, create it
         if (Files.notExists(projectDir)) {
             Files.createDirectories(projectDir);
         }
 
-        final Path root = fileSystem.getPath(base);
+        final Path root = fileSystem.getPath(basePath.toString(), base);
 
         // walk the zip file tree and copy files to the destination
-        Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+        Files.walkFileTree(root, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (allMatch(copyFilters, root.relativize(file))) {
-                    byte[] content = Files.readAllBytes(file);
-                    try {
-                        content = allMatch(processingFilters, root.relativize(file)) ? transform(contentTransformer, content) : content;
-                    } catch (TemplatingException e) {
-                        throw new RuntimeException("error parsing template " + file + ": " + e.getCause().getMessage(), e);
-                    }
-                    
-                    Path rawDest = projectDir.resolve(stringLeadingSlash(root.relativize(file).toString()));
-                    final Path dest = filenameTransformer.apply(rawDest);
-                    progressReporter.reportProgress(logger, "creating {} in {}", projectDir.relativize(dest), projectDir);
-                    Files.write(dest, content);
-                }
-                
+                unpackFileTo(root, file, projectDir, copyFilters, processingFilters,
+                             filenameTransformer, contentTransformer, progressReporter);
+
                 return FileVisitResult.CONTINUE;
-            }
-
-            private byte[] transform(Function<String, String> contentTransformer, byte[] content) {
-                return contentTransformer.apply(new String(content)).getBytes();
-            }
-
-            private boolean allMatch(List<Predicate<Path>> copyFilters, Path file) {
-                return copyFilters.stream().allMatch(p -> p.test(file));
             }
 
             @Override
@@ -156,11 +179,48 @@ public class TemplateArchive implements AutoCloseable {
                 }
                 return FileVisitResult.CONTINUE;
             }
+
+
         });
+    }
+
+    private void unpackFileTo(Path root, Path file, Path projectDir,
+                              List<Predicate<Path>> copyFilters,
+                              List<Predicate<Path>> processingFilters,
+                              Function<Path, Path> filenameTransformer,
+                              Function<String, String> contentTransformer,
+                              ProgressReporter progressReporter) throws IOException {
+
+        if (!allMatch(copyFilters, root.relativize(file))) {
+            return;
+        }
+
+        byte[] content = Files.readAllBytes(file);
+        try {
+            content = allMatch(processingFilters, root.relativize(file)) ? transform(contentTransformer, content) : content;
+        } catch (TemplatingException e) {
+            throw new RuntimeException("error parsing template " + file + ": " + e.getCause().getMessage(), e);
+        }
+
+        Path rawDest = projectDir.resolve(stringLeadingSlash(root.relativize(file).toString()));
+        final Path dest = filenameTransformer.apply(rawDest);
+        progressReporter.reportProgress(logger, "creating {} in {}", projectDir.relativize(dest), projectDir);
+        Files.write(dest, content);
+    }
+
+    private byte[] transform(Function<String, String> contentTransformer, byte[] content) {
+        return contentTransformer.apply(new String(content)).getBytes();
+    }
+
+    private boolean allMatch(List<Predicate<Path>> copyFilters, Path file) {
+        return copyFilters.stream().allMatch(p -> p.test(file));
     }
 
     @Override
     public void close() {
+        if (!closeable) {
+            return;
+        }
         try {
             fileSystem.close();
         } catch (IOException e) {
