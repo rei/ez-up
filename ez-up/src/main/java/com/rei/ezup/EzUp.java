@@ -1,5 +1,8 @@
 package com.rei.ezup;
 
+import static com.rei.ezup.TemplateConfig.CONFIG_GROOVY;
+import static com.rei.ezup.TemplateConfig.DEFAULT_TEMPLATE;
+import static io.methvin.watcher.DirectoryChangeEvent.EventType.DELETE;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 
@@ -10,15 +13,19 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import groovy.lang.GroovyRuntimeException;
 import groovy.text.SimpleTemplateEngine;
+import io.methvin.watcher.DirectoryChangeEvent;
+import io.methvin.watcher.DirectoryWatcher;
 
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.slf4j.Logger;
@@ -30,10 +37,9 @@ import com.rei.aether.Aether;
 import com.rei.ezup.util.AntPathMatcher;
 import com.rei.ezup.util.FileUtils;
 import com.rei.ezup.util.GroovyScriptUtils;
+import com.rei.ezup.util.PomUtils;
 
 public class EzUp {
-    
-
     private static final String TEMPLATE_ERROR_MESSAGE = "error processing template!";
 
     private static final Logger logger = LoggerFactory.getLogger(EzUp.class);
@@ -47,7 +53,7 @@ public class EzUp {
             return true;
         }
         String filename = p.getFileName().toString();
-        return !filename.equals(TemplateConfig.CONFIG_GROOVY) && 
+        return !filename.equals(CONFIG_GROOVY) &&
                !filename.equals(TemplateConfig.POSTINSTALL_GROOVY) &&
                !filename.endsWith(".class") &&
                !filename.endsWith(".retain");
@@ -97,6 +103,87 @@ public class EzUp {
         }
     }
 
+    public CompletableFuture<Void> generateAndWatch(Path dir, Path projectDir) throws IOException, XmlPullParserException {
+        Path pomFile = dir.resolve("pom.xml");
+
+        while (!Files.exists(pomFile)) {
+            if (pomFile.getParent() == null) {
+                throw new IllegalArgumentException("no pom.xml found in: " + dir);
+            }
+            pomFile = pomFile.getParent().resolve("../pom.xml");
+        }
+
+        List<Path> templateConfigs = Files.walk(dir, 6)
+                                    .filter(this::isMainTemplateConfig)
+                                    .collect(toList());
+
+        if (templateConfigs.isEmpty()) {
+            throw new IllegalArgumentException("no template found under " + dir.toAbsolutePath());
+        }
+
+        if (templateConfigs.size() > 1) {
+            templateConfigs = templateConfigs.stream().filter(f -> !f.toString().contains("target")).collect(toList());
+            if (templateConfigs.size() > 1) {
+                throw new IllegalArgumentException(
+                        "multiple templates found under " + dir.toAbsolutePath() + ": " + templateConfigs);
+            }
+        }
+
+        Path templateDir = templateConfigs.get(0).getParent().getParent();
+
+        Artifact pomArtifact = PomUtils.readPomToArtifact(pomFile);
+        List<URL> classpath = resolveClasspath(pomArtifact);
+
+        try (TemplateArchive archive = new TemplateArchive(templateDir, pomArtifact, classpath)) {
+            TemplateConfig config = TemplateConfig.load(archive, null, globalConfig, projectDir);
+
+            List<Predicate<Path>> processFilters = getProcessFilters(config);
+            List<Predicate<Path>> copyFilters = getCopyFilters(config);
+            Function<Path, Path> renameTransformer = getRenameTransformer(config);
+            Function<String, String> templateProcessor = getTemplateProcessor(archive, config, classpath);
+
+            archive.unpackTo(config.getBasePath(), projectDir, copyFilters,
+                             processFilters,
+                             renameTransformer,
+                             templateProcessor,
+                             globalConfig.getProgressReporter());
+
+            runPostInstallScript(projectDir, config.getBasePath(), archive, config);
+
+            DirectoryWatcher watcher =
+                    DirectoryWatcher.builder()
+                                    .path(templateDir)
+                                    .listener(e -> {
+                                        Path mainTemplateDir = templateDir.resolve(DEFAULT_TEMPLATE);
+                                        String relativePath = mainTemplateDir.relativize(e.path()).toString();
+
+                                        if (e.eventType() == DELETE) {
+                                            Path targetFile = renameTransformer.apply(projectDir.resolve(relativePath));
+                                            Files.delete(targetFile);
+                                            globalConfig.getProgressReporter().reportProgress(logger, "deleting {}", targetFile);
+                                        } else {
+                                            archive.unpackFileTo(config.getBasePath(),
+                                                                 relativePath,
+                                                                 projectDir,
+                                                                 copyFilters,
+                                                                 processFilters,
+                                                                 renameTransformer,
+                                                                 templateProcessor,
+                                                                 globalConfig.getProgressReporter());
+                                        }
+
+                                    }).build();
+
+            globalConfig.getProgressReporter().reportProgress("registered watch service for {}", templateDir);
+            return watcher.watchAsync();
+        }
+    }
+
+    private boolean isMainTemplateConfig(Path p) {
+        return p.getParent() != null && p.getParent().getFileName().toString().equals(DEFAULT_TEMPLATE)
+                       && p.getFileName().toString().equals(CONFIG_GROOVY);
+    }
+
     public TemplateInfo getTemplateInfo(String templateGav) {
         return getTemplateInfo(getAether().resolveSingleArtifact(templateGav));
     }
@@ -115,11 +202,11 @@ public class EzUp {
     }
 
     List<Predicate<Path>> getCopyFilters(TemplateConfig config) {
-        return Arrays.asList(NEVER_COPY, anyMatch(config.getIncludedFiles()), anyMatch(config.getExcludedFiles()).negate());
+        return List.of(NEVER_COPY, anyMatch(config.getIncludedFiles()), anyMatch(config.getExcludedFiles()).negate());
     }
     
     List<Predicate<Path>> getProcessFilters(TemplateConfig config) {
-        return Arrays.asList(anyMatch(config.getProcessedFiles()), anyMatch(config.getUnprocessedFiles()).negate());
+        return List.of(anyMatch(config.getProcessedFiles()), anyMatch(config.getUnprocessedFiles()).negate());
     }
 
     Function<Path, Path> getRenameTransformer(TemplateConfig config) {
@@ -188,7 +275,9 @@ public class EzUp {
             }
         }).collect(toList());
     }
-    
+
+
+
     private Aether getAether() {
         return MoreObjects.firstNonNull(globalConfig.getAether(), DEFAULT_AETHER);
     }

@@ -1,11 +1,12 @@
 package com.rei.ezup;
 
 import com.google.common.collect.ImmutableMap;
-import org.codehaus.plexus.util.FileUtils;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,4 +33,14 @@ public class TemplateConfigTest extends BaseTemplateTest {
         }
     }
 
+    @Test
+    void loadFromDirectory(@TempDir Path tmp) throws Exception {
+        try (TemplateArchive archive = new TemplateArchive(getTemplateRootDir(), getTestTemplateArtifact(tmp), List.of())) {
+
+            EzUpConfig globalConfig = new EzUpConfig(false, false, ImmutableMap.of("global", "true", "includeFoo", "true"));
+
+            TemplateConfig config = TemplateConfig.load(archive, null, globalConfig, tmp);
+            assertEquals(3, config.getParameterInfo().size());
+        }
+    }
 }

@@ -5,18 +5,18 @@ import java.util.List;
 import org.eclipse.aether.artifact.Artifact;
 
 public class TemplateInfo {
-    private Artifact artifact;
+    private String gav;
     private String name;
     private String description;
     private List<ParameterInfo> parameters;
     private List<String> subtemplates;
 
-    public Artifact getArtifact() {
-        return artifact;
+    public String getGav() {
+        return gav;
     }
 
-    public void setArtifact(Artifact artifact) {
-        this.artifact = artifact;
+    public void setGav(String gav) {
+        this.gav = gav;
     }
 
     public String getName() {

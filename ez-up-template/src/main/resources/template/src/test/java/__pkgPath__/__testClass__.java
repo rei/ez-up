@@ -16,7 +16,7 @@ public class ${testClass} {
     @Test
     public void canGenerateTemplate() throws Exception {
         tester.forTemplate()
-//              .runsMavenPackage()
+              .runsMavenPackage()
               .generateAndValidate();
     }
     

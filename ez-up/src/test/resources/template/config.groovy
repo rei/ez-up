@@ -6,7 +6,7 @@ params.AppName = toCamelCase(params.appName)
 
 includeFiles '**/*' //default
 
-if (params.includeFoo) {
+if (!params.includeFoo) {
     excludeFiles '**/Foo.java'
 }
 
