@@ -15,7 +15,7 @@
 	<properties>
 		<revision>99999-SNAPSHOT</revision>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <slf4j.version>1.7.21</slf4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
 		<junit5.version>5.5.2</junit5.version>
 	</properties>
 
