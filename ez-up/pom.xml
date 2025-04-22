@@ -5,7 +5,7 @@
 		<groupId>com.rei.ez-up</groupId>
 		<artifactId>ez-up-parent</artifactId>
 		<version>${revision}</version>
-		<relativePath>..</relativePath>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<artifactId>ez-up</artifactId>
 	<name>ez-up</name>
@@ -18,38 +18,33 @@
 		<dependency>
 			<groupId>org.apache.groovy</groupId>
 			<artifactId>groovy-all</artifactId>
-			<version>4.0.20</version>
+			<version>4.0.26</version>
 			<type>pom</type>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient</artifactId>
-			<version>4.5.13</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>33.0.0-jre</version>
+			<version>33.4.8-jre</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.12.0</version>
+			<version>3.17.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-text</artifactId>
-			<version>1.11.0</version>
+			<version>1.13.1</version>
 		</dependency>
 		<dependency>
 			<groupId>io.methvin</groupId>
 			<artifactId>directory-watcher</artifactId>
-			<version>0.15.0</version>
+			<version>0.19.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.rei.aether</groupId>
 			<artifactId>aether-utils</artifactId>
-			<version>1.2</version>
+			<version>2.0.2</version>
 		</dependency>
 	</dependencies>
 </project>
