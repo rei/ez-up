@@ -16,13 +16,14 @@ public class TemplateConfigTest extends BaseTemplateTest {
     @Test
     public void testLoad(@TempDir Path tmp) throws Exception {
         try(TemplateArchive archive = getTestTemplate(tmp)) {
-            EzUpConfig globalConfig = new EzUpConfig(false, false, ImmutableMap.of("global", "true", "includeFoo", "true"));
+            EzUpConfig globalConfig = new EzUpConfig(false, false, ImmutableMap.of("global", "true", "includeFoo", "false"));
 
             TemplateConfig config = TemplateConfig.load(archive, null, globalConfig, tmp);
             Map<String, Object> params = config.getParameterValues();
             System.out.println(params);
             assertEquals(11, params.size());
             assertEquals(1, config.getIncludedFiles().size());
+            assertEquals("**/*", config.getIncludedFiles().get(0));
             assertEquals(1, config.getExcludedFiles().size());
             assertNotNull(params.get("AppName"));
 

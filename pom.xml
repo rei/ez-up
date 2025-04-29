@@ -4,7 +4,8 @@
 	<parent>
 		<groupId>com.rei.oss</groupId>
 		<artifactId>oss-parent</artifactId>
-		<version>2</version>
+		<version>3</version>
+		<relativePath/>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.rei.ez-up</groupId>
@@ -15,8 +16,9 @@
 	<properties>
 		<revision>99999-SNAPSHOT</revision>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <slf4j.version>1.7.21</slf4j.version>
-		<junit5.version>5.5.2</junit5.version>
+		<maven.version>3.9.9</maven.version>
+		<slf4j.version>2.0.17</slf4j.version>
+		<junit5.version>5.12.2</junit5.version>
 	</properties>
 
 	<modules>
@@ -78,7 +80,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.8.1</version>
+				<version>3.14.0</version>
 				<configuration>
 					<release>11</release>
 				</configuration>
@@ -86,7 +88,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.1.1</version>
+				<version>3.11.2</version>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>
@@ -95,6 +97,9 @@
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+					<doclint>all,-missing</doclint>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

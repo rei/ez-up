@@ -1,28 +1,28 @@
 package com.rei.ezup;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AttachIndexMojoTest {
-    @Rule
-    public TemporaryFolder tmp = new TemporaryFolder();
+    @TempDir
+    public Path tmp;
 
     @Test
     public void execute() throws Exception {
         AttachMarkerMojo mojo = new AttachMarkerMojo();
-        mojo.markerFile = tmp.newFile("test.ezup");
+        mojo.markerFile = new File(tmp.toFile(), "test.ezup");
 
         mojo.project = new MavenProject();
         mojo.project.setGroupId("group.id");
